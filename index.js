@@ -12,7 +12,7 @@ const start = (port) => {
     })
 };
 
-const test = sequelize.define('test', {
+const Books = sequelize.define('book', {
     title: {
         type: DataTypes.STRING
     },
@@ -35,7 +35,7 @@ sequelize.sync({ force: true }).then(() => {
         }
     )
     result.results.map(elem=>{
-        test.create({
+        Books.create({
             title:elem.book_title,
             author:elem.book_author,
             summary:elem.summary
