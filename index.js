@@ -7,6 +7,9 @@ const axios = require("axios");
 const psql = "postgres://postgres:postgres@localhost:5432/salah"
 const sequelize = new Sequelize(psql, {});
 
+//API URL ( get top 5 books for all the best sellers lists )
+const apiUrl = 'https://api.nytimes.com/svc/books/v3/lists/overview.json?api-key=dfCTQmcAYXGiqaB0HxUr4ItRzc3Kyb6P';
+
 //start function .. to start the app
 const start = (port) => {
     app.listen(port, () => {
@@ -14,19 +17,30 @@ const start = (port) => {
     })
 };
 
-//defining Books schema
+//defining Publisher schema to be implemented in the database
+const Publisher = sequelize.define('publisher', {
+    name: {
+        type: DataTypes.STRING
+
+    },
+    bookNum: {
+        type: DataTypes.INTEGER
+    }
+}, { timestamps: false });
+
+//defining books schema to be implemented in the database
 const Books = sequelize.define('book', {
     title: {
         type: DataTypes.STRING
     },
     author: {
         type: DataTypes.STRING
-    },
-    summary: {
-        type: DataTypes.TEXT
     }
 }, { timestamps: false });
 
+//defining realtionship between books and publisher( one publisher has many books )
+Publisher.hasMany(Books);
+Books.belongsTo(Publisher);
 
 //connecting to database and start the app and then call the api using axios library
 sequelize.sync({ force: true }).then(() => {
@@ -34,19 +48,24 @@ sequelize.sync({ force: true }).then(() => {
     start(3001);
 }).then(async () => {
 
-    //calling the api that retrieves books with author name: Stephen King
-
-    await axios.get('https://api.nytimes.com/svc/books/v3/reviews.json?author=Stephen+King&api-key=dfCTQmcAYXGiqaB0HxUr4ItRzc3Kyb6P').then(
+    //calling the api
+    await axios.get(apiUrl).then(
         (res) => {
-            
-            //in order to reach to actual result we need to call res.data.result where it is the structure of json response of the result
-            res.data.results.map(elem => {
-                Books.create({
-                    title: elem.book_title,
-                    author: elem.book_author,
-                    summary: elem.summary
+            //in order to reach to actual data that we need, 
+            //we have to call res.data.result.lists where it is the structure of the json response 
+            if (res.data.status === "OK") {
+                res.data.results.lists.map(async (elem) => {
+                    const pub = await Publisher.create({
+                        name: elem.list_name,
+                        bookNum: elem.books.length
+                    })
+
+                    const books = await Books.bulkCreate(elem.books)
+                    pub.addBooks(books);
                 })
-            });
+            } else {
+                console.log("Error, Cannot call the API");
+            }
         }
     )
 
