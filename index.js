@@ -22,9 +22,6 @@ const Publisher = sequelize.define('publisher', {
     name: {
         type: DataTypes.STRING
 
-    },
-    bookNum: {
-        type: DataTypes.INTEGER
     }
 }, { timestamps: false });
 
@@ -35,10 +32,13 @@ const Books = sequelize.define('book', {
     },
     author: {
         type: DataTypes.STRING
+    },
+    description: {
+        type: DataTypes.TEXT
     }
 }, { timestamps: false });
 
-//defining realtionship between books and publisher( one publisher has many books )
+//defining realtionship between books and publishers( one publisher has many books )
 Publisher.hasMany(Books);
 Books.belongsTo(Publisher);
 
@@ -56,10 +56,8 @@ sequelize.sync({ force: true }).then(() => {
             if (res.data.status === "OK") {
                 res.data.results.lists.map(async (elem) => {
                     const pub = await Publisher.create({
-                        name: elem.list_name,
-                        bookNum: elem.books.length
+                        name: elem.list_name
                     })
-
                     const books = await Books.bulkCreate(elem.books)
                     pub.addBooks(books);
                 })
@@ -70,11 +68,3 @@ sequelize.sync({ force: true }).then(() => {
     )
 
 });
-
-
-
-
-
-
-
-
